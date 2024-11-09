@@ -1,0 +1,5 @@
+/build
+/mmdb
+/node_modules
+/test
+.env
