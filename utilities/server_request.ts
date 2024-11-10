@@ -11,6 +11,7 @@ export class ServerRequest {
         return {
             request_uuid:     "Uninitialized",
             request_owner:    "Uninitialized",
+            request_group:    0,
             request_ip:       request_ip,
             request_date:     (Date.now() / 1E3),
             request_count:    0,
@@ -42,6 +43,7 @@ export interface RequestIdentity {
     // request
     request_uuid:      string,
     request_owner:     string,
+    request_group:     number,
     request_ip:        string,
     request_date:      number,
     request_count:     number,

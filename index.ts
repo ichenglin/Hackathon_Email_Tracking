@@ -28,6 +28,12 @@ export const Server = {
     })
 }
 
+const OPEN_ENDPOINTS = [
+    /^\/email_tracking\/user\/register/,
+    /^\/email_tracking\/user\/login/,
+    /^\/email_tracking\/email\/update/
+];
+
 // express initial setup
 Server.server_instance.set("trust proxy", 1);
 Server.server_instance.use(Express.default.json());
@@ -35,22 +41,27 @@ Server.server_instance.use(Express.default.urlencoded({extended: true}));
 Server.server_instance.set("json spaces", "\t");
 Server.server_instance.use(Cors.default());
 
-Server.server_instance.use("/email_tracking/email/*", async (request, response, next) => {
+Server.server_instance.use(async (request, response, next) => {
+    const server_exclude  = (OPEN_ENDPOINTS.filter((endpoint) => request.originalUrl.match(endpoint) !== null).length > 0);
+    if (server_exclude) {
+        next();
+        return;
+    }
     const server_response = await new Promise<{success: boolean, reason?: string}>(async (accept, reject) => {
         // verify token exist
         const authenticate_headers = request.get("Authorization");
         const authenticate_matcher = authenticate_headers?.match(/^Bearer (\w+)$/);
         const authenticate_token   = (((authenticate_matcher !== undefined) && (authenticate_matcher !== null)) ? authenticate_matcher[1] : undefined);
-        if (authenticate_token === undefined) accept({success: false, reason: "Authorization Failed"});
+        if (authenticate_token === undefined) accept({success: false, reason: "Authorization Failed 1"});
         // verify token valid
         const authenticate_user = await ServerDatabase.user_get("user_token", (authenticate_token as string));
-        if (authenticate_user === undefined) accept({success: false, reason: "Authorization Failed"});
+        if (authenticate_user === undefined) accept({success: false, reason: "Authorization Failed 2"});
         // assign user uuid
         response.locals.user = authenticate_user;
         accept({success: true});
     });
     if (server_response.success !== true) response.status(401).json(server_response);
-    next();
+    else                                  next();
 })
 
 Server.server_instance.post("/email_tracking/user/register", async (request, response) => {
@@ -97,6 +108,12 @@ Server.server_instance.post("/email_tracking/user/login", async (request, respon
     response.status(200).json(server_response);
 });
 
+Server.server_instance.get("/email_tracking/user/emails", async (request, response) => {
+    const user_uuid    = (response.locals.user as UserIdentity).user_uuid;
+    const user_records = await ServerDatabase.user_records(user_uuid);
+    response.status(200).json({success: true, result: user_records});
+});
+
 Server.server_instance.get("/email_tracking/email/update", async (request, response) => {
     // send file
     response.sendFile(`${ROOT_DIRECTORY}/assets/pepe.jpg`);
@@ -107,13 +124,16 @@ Server.server_instance.get("/email_tracking/email/update", async (request, respo
     await ServerDatabase.record_update((request_uuid as string), request_identity);
 });
 
-Server.server_instance.get("/email_tracking/email/create", async (request, response) => {
+Server.server_instance.post("/email_tracking/email/create", async (request, response) => {
+    // verify parameter
+    const record_group = ((request.body.record_group !== undefined) ? parseInt(request.body.record_group) : undefined);
+    if ((record_group === undefined) || (record_group < 0) || (record_group > 255)) response.status(200).json({success: false, reason: "Record Group out of Bounds (0~255)"});
     // extract information
     const request_owner    = (response.locals.user as UserIdentity).user_uuid;
     const request_identity = ServerRequest.get_identity(request);
-    const request_saved    = await ServerDatabase.record_create(request_owner, request_identity);
+    const request_saved    = await ServerDatabase.record_create(request_owner, (record_group as number), request_identity);
     // send file
-    response.status(200).send("Created! " + request_saved);
+    response.status(200).json({success: true, id: request_saved});
 });
 
 // deploy on port 3000
