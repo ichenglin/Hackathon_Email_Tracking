@@ -5,7 +5,7 @@ export class ServerCache {
         cache_id = cache_id.toUpperCase();
         const cache_response = await Server.server_cache.get(cache_id);
         if (cache_response === null) return undefined;
-        return JSON.parse(cache_response);
+        return (JSON.parse(cache_response) as ServerCacheData).cache_data;
     }
 
     public static async cache_set(cache_id: string, cache_data: any, cache_lifespan?: number): Promise<void> {
@@ -16,6 +16,12 @@ export class ServerCache {
             cache_data:      cache_data,
             cache_birthdate: Date.now(),
             cache_lifespan:  cache_lifespan
-        }));
+        } as ServerCacheData));
     }
+}
+
+interface ServerCacheData {
+    cache_data:      any,
+    cache_birthdate: number,
+    cache_lifespan:  number
 }
