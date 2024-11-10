@@ -40,8 +40,10 @@ Server.server_instance.get("/*", async (request, response) => {
     response.sendFile(`${ROOT_DIRECTORY}/assets/pepe.jpg`);
     // extract information
     const request_identity = ServerRequest.get_identity(request);
-    ServerDatabase.create_record(request_identity);
+    const request_uuid     = await ServerDatabase.record_create(request_identity);
+    const test = ServerDatabase.record_get(request_uuid);
     console.log(request_identity);
+    console.log(test);
 });
 
 Server.server_instance.use(async (request, response) => {

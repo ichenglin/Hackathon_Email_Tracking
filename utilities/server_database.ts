@@ -1,14 +1,27 @@
 import { Server } from "..";
-import { ServerRequest } from "./server_request";
+import { RequestIdentity, } from "./server_request";
 
 export class ServerDatabase {
-    public static async create_record(server_request: ServerRequest): Promise<void> {
+    public static async record_create(server_request: RequestIdentity): Promise<string> {
+        // initialize entry
+        const request_uuid = await ServerDatabase.database_uuid();
+        const request_new  = server_request;
+        request_new.request_uuid  = request_uuid
+        request_new.request_count = 0;
+        // add to database
+        await ServerDatabase.database_update("tracking_image", "request_uuid", request_new);
+        return request_uuid;
+    }
+
+    public static async record_update(server_request: RequestIdentity): Promise<void> {
         // initialize entry
         const record_new = (server_request as ServerDatabaseEntry);
-        record_new.request_uuid  = await ServerDatabase.database_uuid();
-        record_new.request_count = 0;
-        // add to database
-        await ServerDatabase.database_update("tracking_image", "request_uuid", record_new);
+    }
+
+    public static async record_get(request_uuid: string): Promise<RequestIdentity | undefined> {
+        const request_old = await ServerDatabase.database_query(`SELECT * FROM tracking_image WHERE request_uuid=${request_uuid};`);
+        console.log(request_old);
+        return undefined;
     }
 
     private static async database_query(query: string): Promise<any> {
@@ -30,7 +43,7 @@ export class ServerDatabase {
     }
 
     private static async database_uuid(): Promise<string> {
-        return await ServerDatabase.database_query("SELECT uuid();");
+        return (await ServerDatabase.database_query("SELECT uuid();"))[0]["uuid()"];
     }
 }
 
