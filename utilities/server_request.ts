@@ -10,7 +10,7 @@ export class ServerRequest {
         const request_device = (Server.server_device.parse(request_agent));
         return {
             request_ip:       request_ip,
-            request_date:     Date.now(),
+            request_date:     (Date.now() / 1E3),
             location_country: ServerRequest.get_defined(request_geo.country?.names.en),
             location_city:    ServerRequest.get_defined(request_geo.city?.names.en),
             browser_name:     ServerRequest.get_defined(request_device.client?.name),

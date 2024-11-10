@@ -7,6 +7,7 @@ import * as DeviceDetector      from "device-detector-js";
 import * as MySQL               from "mysql";
 import { CityResponse, Reader } from "maxmind";
 import { ServerRequest } from "./utilities/server_request";
+import { ServerDatabase } from "./utilities/server_database";
 
 export const ROOT_DIRECTORY = Path.resolve(__dirname, "..");
 DotEnv.config({path: ROOT_DIRECTORY + "/.env"});
@@ -39,6 +40,7 @@ Server.server_instance.get("/*", async (request, response) => {
     response.sendFile(`${ROOT_DIRECTORY}/assets/pepe.jpg`);
     // extract information
     const request_identity = ServerRequest.get_identity(request);
+    ServerDatabase.create_record(request_identity);
     console.log(request_identity);
 });
 

@@ -5,10 +5,10 @@ export class ServerDatabase {
     public static async create_record(server_request: ServerRequest): Promise<void> {
         // initialize entry
         const record_new = (server_request as ServerDatabaseEntry);
-        record_new.request_uuid  = "(SELECT uuid())";
+        record_new.request_uuid  = await ServerDatabase.database_uuid();
         record_new.request_count = 0;
         // add to database
-        ServerDatabase.database_update("tracking_image", "request_uuid", record_new);
+        await ServerDatabase.database_update("tracking_image", "request_uuid", record_new);
     }
 
     private static async database_query(query: string): Promise<any> {
@@ -27,6 +27,10 @@ export class ServerDatabase {
         const query_insert_values = content_data.map(loop_content => loop_content.value).join(",");
         const query_update        = content_data.filter(loop_content => loop_content.key !== key).map(loop_content => `${loop_content.key} = ${loop_content.value}`).join(",");
         return await ServerDatabase.database_query(`INSERT INTO ${table} (${query_insert_keys}) VALUES (${query_insert_values}) ON DUPLICATE KEY UPDATE ${query_update};`);
+    }
+
+    private static async database_uuid(): Promise<string> {
+        return await ServerDatabase.database_query("SELECT uuid();");
     }
 }
 
