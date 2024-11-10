@@ -4,17 +4,28 @@ import * as DotEnv              from "dotenv";
 import * as Express             from "express";
 import * as Cors                from "cors";
 import * as DeviceDetector      from "device-detector-js";
+import * as MySQL               from "mysql";
 import { CityResponse, Reader } from "maxmind";
 import { ServerRequest } from "./utilities/server_request";
 
 export const ROOT_DIRECTORY = Path.resolve(__dirname, "..");
+DotEnv.config({path: ROOT_DIRECTORY + "/.env"});
 export const Server = {
     root_directory:  ROOT_DIRECTORY,
     server_instance: Express.default(),
     server_device:   new DeviceDetector.default(),
-    server_geoip:    new Reader<CityResponse>(FileSystem.readFileSync(`${ROOT_DIRECTORY}/mmdb/GeoLite2-City.mmdb`))
+    server_geoip:    new Reader<CityResponse>(FileSystem.readFileSync(`${ROOT_DIRECTORY}/mmdb/GeoLite2-City.mmdb`)),
+    server_database: MySQL.createConnection({
+        host:     process.env.MYSQL_HOST,
+        user:     process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+        ssl: {
+            ca: FileSystem.readFileSync(`${ROOT_DIRECTORY}/${process.env.MYSQL_SSL}`),
+            rejectUnauthorized: false
+        }
+    })
 }
-DotEnv.config({path: ROOT_DIRECTORY + "/.env"});
 
 // express initial setup
 Server.server_instance.set("trust proxy", 1);
