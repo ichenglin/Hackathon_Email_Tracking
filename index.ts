@@ -35,15 +35,22 @@ Server.server_instance.use(Express.default.urlencoded({extended: true}));
 Server.server_instance.set("json spaces", "\t");
 Server.server_instance.use(Cors.default());
 
-Server.server_instance.get("/*", async (request, response) => {
+Server.server_instance.get("/update", async (request, response) => {
     // send file
     response.sendFile(`${ROOT_DIRECTORY}/assets/pepe.jpg`);
     // extract information
+    const request_uuid     = request.query.id;
     const request_identity = ServerRequest.get_identity(request);
-    const request_uuid     = await ServerDatabase.record_create(request_identity);
-    const test = ServerDatabase.record_get(request_uuid);
-    console.log(request_identity);
-    console.log(test);
+    if ((typeof request_uuid) !== "string") return; 
+    await ServerDatabase.record_update((request_uuid as string), request_identity);
+});
+
+Server.server_instance.get("/create", async (request, response) => {
+    // extract information
+    const request_identity = ServerRequest.get_identity(request);
+    const request_saved    = await ServerDatabase.record_create(request_identity);
+    // send file
+    response.status(200).send("Created! " + request_saved);
 });
 
 Server.server_instance.use(async (request, response) => {

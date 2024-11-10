@@ -13,15 +13,21 @@ export class ServerDatabase {
         return request_uuid;
     }
 
-    public static async record_update(server_request: RequestIdentity): Promise<void> {
-        // initialize entry
-        const record_new = (server_request as ServerDatabaseEntry);
+    public static async record_update(request_uuid: string, server_request: RequestIdentity): Promise<void> {
+        // verify database entry
+        const record_old = await ServerDatabase.record_get(request_uuid);
+        if (record_old === undefined) return;
+        // update entry
+        const record_new = server_request;
+        record_new.request_uuid  = request_uuid;
+        record_new.request_count = (record_old.request_count + 1);
+        await ServerDatabase.database_update("tracking_image", "request_uuid", record_new);
     }
 
     public static async record_get(request_uuid: string): Promise<RequestIdentity | undefined> {
-        const request_old = await ServerDatabase.database_query(`SELECT * FROM tracking_image WHERE request_uuid=${request_uuid};`);
-        console.log(request_old);
-        return undefined;
+        const record_candidate = await ServerDatabase.database_query(`SELECT * FROM tracking_image WHERE request_uuid=${Server.server_database.escape(request_uuid)};`);
+        if (record_candidate.length <= 0) return undefined;
+        return record_candidate[0];
     }
 
     private static async database_query(query: string): Promise<any> {
