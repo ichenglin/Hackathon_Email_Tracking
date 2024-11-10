@@ -5,9 +5,11 @@ import * as Express             from "express";
 import * as Cors                from "cors";
 import * as DeviceDetector      from "device-detector-js";
 import * as MySQL               from "mysql";
+import * as Redis               from "redis";
 import { CityResponse, Reader } from "maxmind";
 import { ServerRequest, UserIdentity } from "./utilities/server_request";
 import { ServerDatabase } from "./utilities/server_database";
+import { ServerCache } from "./utilities/server_cache";
 
 export const ROOT_DIRECTORY = Path.resolve(__dirname, "..");
 DotEnv.config({path: ROOT_DIRECTORY + "/.env"});
@@ -16,6 +18,7 @@ export const Server = {
     server_instance: Express.default(),
     server_device:   new DeviceDetector.default(),
     server_geoip:    new Reader<CityResponse>(FileSystem.readFileSync(`${ROOT_DIRECTORY}/mmdb/GeoLite2-City.mmdb`)),
+    server_cache:    Redis.createClient({password: process.env.REDIS_PASSWORD}),
     server_database: MySQL.createConnection({
         host:     process.env.MYSQL_HOST,
         user:     process.env.MYSQL_USER,
@@ -28,6 +31,7 @@ export const Server = {
     })
 }
 
+Server.server_cache.connect();
 const OPEN_ENDPOINTS = [
     /^\/email_tracking\/user\/register/,
     /^\/email_tracking\/user\/login/,
@@ -110,7 +114,11 @@ Server.server_instance.post("/email_tracking/user/login", async (request, respon
 
 Server.server_instance.get("/email_tracking/user/emails", async (request, response) => {
     const user_uuid    = (response.locals.user as UserIdentity).user_uuid;
-    const user_records = await ServerDatabase.user_records(user_uuid);
+    let   user_records = await ServerCache.cache_get(`user_emails_${user_uuid}`);
+    if (user_records === undefined) {
+        user_records = await ServerDatabase.user_records(user_uuid);
+        await ServerCache.cache_set(`user_emails_${user_uuid}`, user_records, undefined);
+    }
     response.status(200).json({success: true, result: user_records});
 });
 

@@ -9,13 +9,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/redis": "^4.0.11",
     "cors": "^2.8.5",
     "device-detector-js": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "maxmind": "^4.3.22",
     "mysql": "^2.18.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
