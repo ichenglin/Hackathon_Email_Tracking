@@ -10,6 +10,7 @@ export class ServerRequest {
         const request_device = (Server.server_device.parse(request_agent));
         return {
             request_uuid:     "Uninitialized",
+            request_owner:    "Uninitialized",
             request_ip:       request_ip,
             request_date:     (Date.now() / 1E3),
             request_count:    0,
@@ -30,9 +31,17 @@ export class ServerRequest {
     }
 }
 
+export interface UserIdentity {
+    user_uuid:     string,
+    user_username: string,
+    user_password: string,
+    user_token:    string
+}
+
 export interface RequestIdentity {
     // request
     request_uuid:      string,
+    request_owner:     string,
     request_ip:        string,
     request_date:      number,
     request_count:     number,

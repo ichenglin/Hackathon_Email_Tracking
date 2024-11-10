@@ -1,12 +1,38 @@
 import { Server } from "..";
-import { RequestIdentity, } from "./server_request";
+import { RequestIdentity, UserIdentity, } from "./server_request";
 
 export class ServerDatabase {
-    public static async record_create(server_request: RequestIdentity): Promise<string> {
+    public static async user_create(user_request: UserIdentity): Promise<string> {
+        const request_uuid    = await ServerDatabase.database_uuid()
+        const request_new     = user_request;
+        request_new.user_uuid = request_uuid;
+        // add to database
+        await ServerDatabase.database_update("tracking_user", "user_uuid", request_new);
+        return request_uuid;
+    }
+
+    public static async user_update(user_uuid: string, user_request: UserIdentity): Promise<void> {
+        // verify database entry
+        const record_old = await ServerDatabase.user_get("user_uuid", user_uuid);
+        if (record_old === undefined) return;
+        // update entry
+        const record_new     = user_request;
+        record_new.user_uuid = user_uuid;
+        await ServerDatabase.database_update("tracking_user", "user_uuid", record_new);
+    }
+
+    public static async user_get(user_field: string, user_value: string): Promise<UserIdentity | undefined> {
+        const user_candidate = await ServerDatabase.database_query(`SELECT * FROM tracking_user WHERE ${user_field}=${Server.server_database.escape(user_value)};`);
+        if (user_candidate.length <= 0) return undefined;
+        return user_candidate[0];
+    }
+
+    public static async record_create(owner_uuid: string, server_request: RequestIdentity): Promise<string> {
         // initialize entry
-        const request_uuid = await ServerDatabase.database_uuid();
-        const request_new  = server_request;
-        request_new.request_uuid  = request_uuid
+        const request_uuid        = await ServerDatabase.database_uuid();
+        const request_new         = server_request;
+        request_new.request_uuid  = request_uuid;
+        request_new.request_owner = owner_uuid;
         request_new.request_count = 0;
         // add to database
         await ServerDatabase.database_update("tracking_image", "request_uuid", request_new);
@@ -20,6 +46,7 @@ export class ServerDatabase {
         // update entry
         const record_new = server_request;
         record_new.request_uuid  = request_uuid;
+        record_new.request_owner = record_old.request_owner;
         record_new.request_count = (record_old.request_count + 1);
         await ServerDatabase.database_update("tracking_image", "request_uuid", record_new);
     }
